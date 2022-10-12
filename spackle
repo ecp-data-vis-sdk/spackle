@@ -30,7 +30,7 @@ def options():
     p.add_argument('-x', '--x11', type=bool,
                    help='forward X11 environment into the container')
     p.add_argument('-D', '--x11-display', type=str,
-                   help='the display to use for the container')
+                   help='the display to use for the container; if passed, `--x11` will default to `true`')
     p.add_argument('-t', '--temp', type=bool,
                    help='remove the container when done')
 
@@ -115,6 +115,9 @@ if __name__ == '__main__':
         p.spack_source = pathlib.Path.cwd()
     if p.x11_display is None:
         p.x11_display = os.environ.get('DISPLAY')
+    # If a display is passed and `x11` is unset, default it to True.
+    elif p.x11 is None:
+        p.x11 = True
 
     # Sanity checks.
     if p.x11 and not p.x11_display:
