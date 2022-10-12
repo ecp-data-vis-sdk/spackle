@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import os
+import pathlib
+import subprocess
+
+
+def options():
+    p = argparse.ArgumentParser(description='simple Docker helper for spack development')
+    p.add_argument('-N', '--name', type=str,
+                   help='the name of the configuration')
+    p.add_argument('-c', '--config', type=pathlib.Path,
+                   help='path to the configuration file')
+    p.add_argument('-s', '--save', action='store_true',
+                   help='save settings to the configuration file')
+    p.add_argument('-n', '--dry-run', action='store_true',
+                   help='only print what command would be run')
+    p.add_argument('-d', '--docker-bin', type=str,
+                   help='the Docker (compatible) binary to use')
+    p.add_argument('-i', '--image', type=str,
+                   help='the image to use')
+    p.add_argument('-r', '--root', type=pathlib.PurePosixPath,
+                   help='the path to use in the container')
+    p.add_argument('-S', '--spack-source', type=pathlib.Path,
+                   help='the spack source to use in the container')
+    p.add_argument('-C', '--spack-cache', type=pathlib.Path,
+                   help='the spack cache to use in the container')
+    p.add_argument('-x', '--x11', type=bool,
+                   help='forward X11 environment into the container')
+    p.add_argument('-D', '--x11-display', type=str,
+                   help='the display to use for the container')
+    p.add_argument('-t', '--temp', type=bool,
+                   help='remove the container when done')
+
+    #p.add_argument('', nargs='*',
+    #               help='other arguments to pass to the command line')
+
+    return p
+
+
+def to_json(opts):
+    j = {}
+
+    if p.name is not None:
+        j['name'] = p.name
+    if p.docker_bin is not None:
+        j['docker-bin'] = p.docker_bin
+    if p.image is not None:
+        j['image'] = p.image
+    if p.root is not None:
+        j['root'] = str(p.root)
+    if p.spack_source is not None:
+        j['spack-source'] = str(p.spack_source)
+    if p.spack_cache is not None:
+        j['spack-cache'] = str(p.spack_cache)
+    if p.temp is not None:
+        j['temp'] = p.temp
+    if p.x11 is not None:
+        j['x11'] = p.x11
+    if p.x11_display is not None:
+        j['x11-display'] = p.x11_display
+
+    return j
+
+
+if __name__ == '__main__':
+    p = options()
+    p = p.parse_args()
+
+    # Support loading a configuration file.
+    if p.config is not None:
+        if p.config.exists():
+            with open(p.config, 'r') as fin:
+                config = json.load(fin)
+
+            # Load from the file.
+            if p.name is None:
+                p.name = config.get('name')
+            if p.docker_bin is None:
+                p.docker_bin = config.get('docker-bin')
+            if p.image is None:
+                p.image = config.get('image')
+            if p.root is None:
+                p.root = pathlib.PurePosixPath(config.get('root'))
+            if p.spack_source is None:
+                p.spack_source = pathlib.Path(config.get('spack-source'))
+            if p.spack_cache is None:
+                p.spack_cache = pathlib.Path(config.get('spack-cache'))
+            if p.temp is None:
+                p.temp = config.get('temp')
+            if p.x11 is None:
+                p.x11 = config.get('x11')
+            if p.x11_display is None:
+                p.x11_display = config.get('x11-display')
+        elif not p.save:
+            raise RuntimeError(f'missing configuration file: {p.config}')
+
+        # Save the config file if requested.
+        if p.save:
+            with open(p.config, 'w+') as fout:
+                json.dump(to_json(p), fout)
+
+    # Set defaults.
+    if p.name is None:
+        p.name = 'default'
+    if p.docker_bin is None:
+        p.docker_bin = 'docker'
+    if p.image is None:
+        p.image = 'ecpe4s/ubuntu20.04-runner-x86_64:latest'
+    if p.root is None:
+        p.root = '/build'
+    if p.spack_source is None:
+        p.spack_source = pathlib.Path.cwd()
+    if p.x11_display is None:
+        p.x11_display = os.environ.get('DISPLAY')
+
+    # Sanity checks.
+    if p.x11 and not p.x11_display:
+        raise RuntimeError('X11 support requested, but no X11 display found')
+
+    # Make sure volume mounts are absolute.
+    if not p.spack_source.is_absolute():
+        p.spack_source = p.spack_source.resolve()
+    if p.spack_cache is not None and not p.spack_cache.is_absolute():
+        p.spack_cache = p.spack_cache.resolve()
+
+    # Build up argument list.
+    args = [p.docker_bin, 'run', '-it']
+
+    if p.temp:
+        args.append('--rm')
+
+    args.extend(['--name', f'spack-dev-{p.name}'])
+
+    args.extend(['--volume', f'{p.spack_source}:{p.root}/src:Z'])
+    if p.spack_cache:
+        args.extend(['--volume', f'{p.spack_cache}:{p.root}/cache:Z'])
+    else:
+        args.extend(['--tmpfs', f'{p.root}/cache'])
+
+    if p.x11:
+        args.extend(['--volume', '/tmp/.X11-unix:/tmp/.X11-unix:Z'])
+        args.extend(['--env', f'DISPLAY={p.x11_display}'])
+
+    args.append(p.image)
+
+    # Perform the requested action.
+    if p.dry_run:
+        print(args)
+    else:
+        subprocess.check_call(args)
