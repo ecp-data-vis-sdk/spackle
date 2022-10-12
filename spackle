@@ -119,7 +119,7 @@ if __name__ == '__main__':
     # Sanity checks.
     if p.x11 and not p.x11_display:
         raise RuntimeError('X11 support requested, but no X11 display found')
-    if not p.root.is_absolute()
+    if not p.root.is_absolute():
         raise RuntimeError(f'in-container root must be an absolute path: {p.root}')
 
     # Make sure volume mounts are absolute.
