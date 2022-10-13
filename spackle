@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import subprocess
+import sys
 
 
 def options():
@@ -27,6 +28,8 @@ def options():
                    help='the spack source to use in the container')
     p.add_argument('-C', '--spack-cache', type=pathlib.Path,
                    help='the spack cache to use in the container')
+    p.add_argument('-O', '--spack-opt', type=pathlib.Path,
+                   help='the spack `/opt` directory to use in the container')
     p.add_argument('-x', '--x11', type=bool,
                    help='forward X11 environment into the container')
     p.add_argument('-D', '--x11-display', type=str,
@@ -54,6 +57,8 @@ def to_json(opts):
         j['spack-source'] = str(p.spack_source)
     if p.spack_cache is not None:
         j['spack-cache'] = str(p.spack_cache)
+    if p.spack_opt is not None:
+        j['spack-opt'] = str(p.spack_opt)
     if p.temp is not None:
         j['temp'] = p.temp
     if p.x11 is not None:
@@ -95,6 +100,10 @@ if __name__ == '__main__':
                 spack_cache = config.get('spack-cache')
                 if spack_cache is not None:
                     p.spack_cache = pathlib.Path(spack_cache)
+            if p.spack_opt is None:
+                spack_opt = config.get('spack-opt')
+                if spack_opt is not None:
+                    p.spack_opt = pathlib.Path(spack_opt)
             if p.temp is None:
                 p.temp = config.get('temp')
             if p.x11 is None:
@@ -139,6 +148,14 @@ if __name__ == '__main__':
         p.spack_source = p.spack_source.resolve()
     if p.spack_cache is not None and not p.spack_cache.is_absolute():
         p.spack_cache = p.spack_cache.resolve()
+    if p.spack_opt is not None and not p.spack_opt.is_absolute():
+        p.spack_opt = p.spack_opt.resolve()
+
+    # Warning checks.
+    if p.spack_opt is None and not p.temp:
+        print('Warning: not specifying an `/opt` mount in a non-temporary '
+              'container will lose any compiled packages upon restarting the '
+              'container', file=sys.stderr)
 
     # Build up argument list.
     args = [p.docker_bin, 'run', '-it']
@@ -153,6 +170,10 @@ if __name__ == '__main__':
         args.extend(['--volume', f'{p.spack_cache}:{p.root}/cache:Z'])
     else:
         args.extend(['--tmpfs', f'{p.root}/cache'])
+    if p.spack_opt:
+        args.extend(['--volume', f'{p.spack_opt}:{p.root}/opt:Z'])
+    else:
+        args.extend(['--tmpfs', f'{p.root}/opt'])
 
     if p.x11:
         args.extend(['--volume', '/tmp/.X11-unix:/tmp/.X11-unix:Z'])
