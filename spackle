@@ -83,11 +83,17 @@ if __name__ == '__main__':
             if p.image is None:
                 p.image = config.get('image')
             if p.root is None:
-                p.root = pathlib.PurePosixPath(config.get('root'))
+                root = config.get('root')
+                if root is not None:
+                    p.root = pathlib.PurePosixPath()
             if p.spack_source is None:
-                p.spack_source = pathlib.Path(config.get('spack-source'))
+                spack_source = config.get('spack-source')
+                if spack_source is not None:
+                    p.spack_source = pathlib.Path(spack_source)
             if p.spack_cache is None:
-                p.spack_cache = pathlib.Path(config.get('spack-cache'))
+                spack_cache = config.get('spack-cache')
+                if spack_cache is not None:
+                    p.spack_cache = pathlib.Path(spack_cache)
             if p.temp is None:
                 p.temp = config.get('temp')
             if p.x11 is None:
