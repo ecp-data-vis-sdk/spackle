@@ -176,6 +176,7 @@ if __name__ == '__main__':
     args.extend(['--name', f'spack-dev-{p.name}'])
 
     args.extend(['--volume', f'{p.spack_source}:{p.root}/src:Z'])
+    args.extend(['--env', f'SPACK_ROOT={p.root}/src'])
     if p.spack_cache:
         args.extend(['--volume', f'{p.spack_cache}:{p.root}/cache:Z'])
     else:
