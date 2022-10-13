@@ -116,7 +116,7 @@ if __name__ == '__main__':
     if p.image is None:
         p.image = 'ecpe4s/ubuntu20.04-runner-x86_64:latest'
     if p.root is None:
-        p.root = '/build'
+        p.root = pathlib.PurePosixPath('/build')
     if p.spack_source is None:
         p.spack_source = pathlib.Path.cwd()
     if p.x11_display is None:
