@@ -33,9 +33,8 @@ def options():
                    help='the display to use for the container; if passed, `--x11` will default to `true`')
     p.add_argument('-t', '--temp', type=bool,
                    help='remove the container when done')
-
-    #p.add_argument('', nargs='*',
-    #               help='other arguments to pass to the command line')
+    p.add_argument('extra_args', nargs='*',
+                   help='other arguments to pass to the container')
 
     return p
 
@@ -61,6 +60,8 @@ def to_json(opts):
         j['x11'] = p.x11
     if p.x11_display is not None:
         j['x11-display'] = p.x11_display
+    if p.extra_args is not None:
+        j['extra-args'] = p.extra_args
 
     return j
 
@@ -100,6 +101,8 @@ if __name__ == '__main__':
                 p.x11 = config.get('x11')
             if p.x11_display is None:
                 p.x11_display = config.get('x11-display')
+            if p.extra_args is None:
+                p.extra_args = config.get('extra-args')
         elif not p.save:
             raise RuntimeError(f'missing configuration file: {p.config}')
 
@@ -154,6 +157,9 @@ if __name__ == '__main__':
     if p.x11:
         args.extend(['--volume', '/tmp/.X11-unix:/tmp/.X11-unix:Z'])
         args.extend(['--env', f'DISPLAY={p.x11_display}'])
+
+    if p.extra_args is not None:
+        args.extend(p.extra_args)
 
     args.append(p.image)
 
