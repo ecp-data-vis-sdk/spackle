@@ -30,6 +30,8 @@ def options():
                    help='the spack cache to use in the container')
     p.add_argument('-O', '--spack-opt', type=pathlib.Path,
                    help='the spack `/opt` directory to use in the container')
+    p.add_argument('-M', '--spack-modules', type=pathlib.Path,
+                   help='the spack modules directory to use in the container')
     p.add_argument('-x', '--x11', type=bool,
                    help='forward X11 environment into the container')
     p.add_argument('-D', '--x11-display', type=str,
@@ -59,6 +61,8 @@ def to_json(opts):
         j['spack-cache'] = str(p.spack_cache)
     if p.spack_opt is not None:
         j['spack-opt'] = str(p.spack_opt)
+    if p.spack_modules is not None:
+        j['spack-modules'] = str(p.spack_modules)
     if p.temp is not None:
         j['temp'] = p.temp
     if p.x11 is not None:
@@ -104,6 +108,10 @@ if __name__ == '__main__':
                 spack_opt = config.get('spack-opt')
                 if spack_opt is not None:
                     p.spack_opt = pathlib.Path(spack_opt)
+            if p.spack_modules is None:
+                spack_modules = config.get('spack-modules')
+                if spack_modules is not None:
+                    p.spack_modules = pathlib.Path(spack_modules)
             if p.temp is None:
                 p.temp = config.get('temp')
             if p.x11 is None:
@@ -150,6 +158,8 @@ if __name__ == '__main__':
         p.spack_cache = p.spack_cache.resolve()
     if p.spack_opt is not None and not p.spack_opt.is_absolute():
         p.spack_opt = p.spack_opt.resolve()
+    if p.spack_modules is not None and not p.spack_modules.is_absolute():
+        p.spack_modules = p.spack_modules.resolve()
 
     # Warning checks.
     if p.spack_opt is None and not p.temp:
@@ -174,6 +184,10 @@ if __name__ == '__main__':
         args.extend(['--volume', f'{p.spack_opt}:{p.root}/opt:Z'])
     else:
         args.extend(['--tmpfs', f'{p.root}/opt'])
+    if p.spack_modules:
+        args.extend(['--volume', f'{p.spack_modules}:{p.root}/modules:Z'])
+    else:
+        args.extend(['--tmpfs', f'{p.root}/modules'])
 
     if p.x11:
         args.extend(['--volume', '/tmp/.X11-unix:/tmp/.X11-unix:Z'])
