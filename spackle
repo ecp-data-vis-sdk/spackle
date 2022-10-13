@@ -118,7 +118,7 @@ if __name__ == '__main__':
                 p.x11 = config.get('x11')
             if p.x11_display is None:
                 p.x11_display = config.get('x11-display')
-            if p.extra_args is None:
+            if p.extra_args is None or not p.extra_args:
                 p.extra_args = config.get('extra-args')
         elif not p.save:
             raise RuntimeError(f'missing configuration file: {p.config}')
