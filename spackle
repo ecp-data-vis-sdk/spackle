@@ -38,6 +38,8 @@ def options():
                    help='the display to use for the container; if passed, `--x11` will default to `true`')
     p.add_argument('-t', '--temp', type=bool,
                    help='remove the container when done')
+    p.add_argument('-b', '--background', type=bool,
+                   help='run the container in the background')
     p.add_argument('extra_args', nargs='*',
                    help='other arguments to pass to the container')
 
@@ -65,6 +67,8 @@ def to_json(opts):
         j['spack-modules'] = str(p.spack_modules)
     if p.temp is not None:
         j['temp'] = p.temp
+    if p.background is not None:
+        j['background'] = p.background
     if p.x11 is not None:
         j['x11'] = p.x11
     if p.x11_display is not None:
@@ -114,6 +118,8 @@ if __name__ == '__main__':
                     p.spack_modules = pathlib.Path(spack_modules)
             if p.temp is None:
                 p.temp = config.get('temp')
+            if p.background is None:
+                p.background = config.get('background')
             if p.x11 is None:
                 p.x11 = config.get('x11')
             if p.x11_display is None:
@@ -168,12 +174,18 @@ if __name__ == '__main__':
               'container', file=sys.stderr)
 
     # Build up argument list.
-    args = [p.docker_bin, 'run', '-it']
+    args = [p.docker_bin, 'run']
+
+    if p.background:
+        args.append('--detach')
+    else:
+        args.append('-it')
 
     if p.temp:
         args.append('--rm')
 
-    args.extend(['--name', f'spack-dev-{p.name}'])
+    container_name = f'spack-dev-{p.name}'
+    args.extend(['--name', container_name])
 
     args.extend(['--volume', f'{p.spack_source}:{p.root}/src:Z'])
     args.extend(['--env', f'SPACK_ROOT={p.root}/src'])
@@ -204,3 +216,5 @@ if __name__ == '__main__':
         print(args)
     else:
         subprocess.check_call(args)
+        if p.background:
+            print(f'container name: {container_name}')
