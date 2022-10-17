@@ -159,13 +159,13 @@ if __name__ == '__main__':
 
     # Make sure volume mounts are absolute.
     if not p.spack_source.is_absolute():
-        p.spack_source = p.spack_source.resolve()
+        p.spack_source = pathlib.Path.cwd().join(p.spack_source)
     if p.spack_cache is not None and not p.spack_cache.is_absolute():
-        p.spack_cache = p.spack_cache.resolve()
+        p.spack_cache = pathlib.Path.cwd().join(p.spack_cache)
     if p.spack_opt is not None and not p.spack_opt.is_absolute():
-        p.spack_opt = p.spack_opt.resolve()
+        p.spack_opt = pathlib.Path.cwd().join(p.spack_opt)
     if p.spack_modules is not None and not p.spack_modules.is_absolute():
-        p.spack_modules = p.spack_modules.resolve()
+        p.spack_modules = pathlib.Path.cwd().join(p.spack_modules)
 
     # Warning checks.
     if p.spack_opt is None and not p.temp:
