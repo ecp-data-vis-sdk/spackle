@@ -177,7 +177,7 @@ if __name__ == '__main__':
     args = [p.docker_bin, 'run']
 
     if p.background:
-        args.append('--detach')
+        args.append('-dt')
     else:
         args.append('-it')
 
