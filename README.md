@@ -20,6 +20,7 @@ It is recommended to perform the following in the development Spack source tree 
 $ ln -s ../opt
 $ ln -s ../../../cache var/spack
 $ ln -s ../../../modules share/spack
+$ ln -s ../../../environments share/spack
 ```
 
 This will ensure that the in-container mounts are always used within
